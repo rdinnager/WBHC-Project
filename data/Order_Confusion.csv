@@ -1,0 +1,18 @@
+"","Blattaria","Coleoptera","Diptera","Embioptera","Ephemeroptera","Hemiptera","Hymenoptera","Isoptera","Lepidoptera","Mantodea","Neuroptera","Odonata","Orthoptera","Phthiraptera","Plecoptera","Thysanoptera","Trichoptera","1 - Osumms"
+"Blattaria",6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+"Coleoptera",0,542,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+"Diptera",0,0,602,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+"Embioptera",0,0,0,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+"Ephemeroptera",0,0,0,0,60,0,0,0,0,0,0,0,0,0,0,0,0,0
+"Hemiptera",0,0,0,0,0,250,0,0,0,0,0,0,0,0,0,0,0,0
+"Hymenoptera",0,0,0,0,0,0,906,0,0,0,0,0,0,0,0,0,0,0
+"Isoptera",0,0,0,0,0,0,0,12,0,0,0,0,0,0,0,0,0,0
+"Lepidoptera",0,0,0,0,0,0,0,0,3041,0,0,0,0,0,0,0,0,0
+"Mantodea",0,0,0,0,0,0,0,0,0,12,0,0,0,0,0,0,0,0
+"Neuroptera",0,0,1,0,0,0,0,0,1,0,13,0,0,0,0,0,0,0.133333333333333
+"Odonata",0,0,0,0,0,0,0,0,0,0,0,48,0,0,0,0,0,0
+"Orthoptera",0,0,0,0,0,0,0,0,0,0,0,0,83,0,0,0,0,0
+"Phthiraptera",0,0,0,0,0,0,1,0,0,0,0,0,0,9,0,0,0,0.1
+"Plecoptera",0,0,0,0,0,0,0,0,0,0,0,0,0,0,25,0,0,0
+"Thysanoptera",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,24,0,0
+"Trichoptera",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,155,0.0127388535031847
