@@ -1,10 +1,28 @@
-#Script to calculate Return Time Distribution from iBOL COI Data
-library(rPython)
-library(data.table)
-library("Biostrings")
-#dat<-read.csv("D:/Users/Dinnage/Projects/WBHC-Project/data/COI_Play_Dataset.csv",stringsAsFactors=F)
-#dat<-dat[,c("processid","nucleotides","order_name","family_name","subfamily_name","genus_name","species_name")]
-#write.csv(dat,file="D:/Users/Dinnage/Projects/WBHC-Project/data/COI_Play_Dataset_clean.csv")
+require(rPython)
+require(Biostrings)
+require(plyr)
+require(dplyr)
+require(magrittr)
 
-dat<-fread("D:/Users/Dinnage/Projects/WBHC-Project/data/COI_Play_Dataset_clean.csv",stringsAsFactors=F)
-seqs<-DNAStringSet(dat$nucleotides)
+python.load("/home/din02g/Al-Fr_Diversity/Code/SourceCode.py")
+python.load("/home/din02g/Al-Fr_Diversity/Code/suffix_tree.py")
+python.exec("import sys")
+python.exec("sys.path.append(\"/home/din02g/Al-Fr_Diversity/Code/\")")
+
+getRTDs<-function(path,k=5){
+  rtds<-python.call("computeRTDfromfastafile",path,k) 
+  out<- rtds[[2]] %>% ldply(identity)
+  rtdnames<-python.call("returnNames",k)
+  newnames<-unlist(lapply(rtdnames,function(x) paste(x,c("mean","var"),sep="_")))
+  rownames(out)<-rtds[[1]]
+  colnames(out)<-newnames
+  return(out)
+}
+
+
+getAll_RTDs<-function(path, k=5) {
+  all.rtds<-llply(seq_len(k),function(x) getRTDs(path,x)) %>% 
+  out<-do.call(cbind,all.rtds)
+  return(out)
+}
+
