@@ -34,6 +34,11 @@ cleandat<-cleandat[!is.na(cleandat$nucleotides),]
 
 ## reduce to only one sequence per species
 library(dplyr)
+## data with species names
+cleandat.spec<-cleandat[!is.na(cleandat$species_name),]
+cleandat.new<-group_by(cleandat.spec,species_name) %>% do(sample_n(.,1))
+cleandat<-cleandat[is.na(cleandat$species_name),]
+cleandat<-rbind(cleandat,cleandat.new)
 
 ## make my own ID
 cleandat$IDnum<-seq_along(cleandat$processid)
