@@ -16,9 +16,10 @@ cleandat<-cleandat[cleandat$markercode=="COI-5P",]
 ## replace blanks with NAs
 cleandat[cleandat==" "]<-NA
 
-## remove entries with no sequence data
+## remove entries with no sequence data or very small sequences
 
 cleandat<-cleandat[!is.na(cleandat$nucleotides),]
+cleandat<-cleandat[nchar(cleandat$nucleotides)>50,]
 
 ## reduce to only one sequence per species
 library(dplyr)
@@ -43,6 +44,7 @@ fullsumdat<-left_join(sumdat,IDnums)
 path<-"D:/Users/Dinnage/Projects/WBHC-Project/data/FullData"
 save(fullsumdat,file=paste(path,"/insect_COI_data_summary.Rdata",sep=""))
 write.csv(sumdat,file=paste(path,"/insect_COI_data_counts.csv",sep=""),quote=FALSE,row.names=FALSE)
+write.csv(cleandat,file=paste(path,"/insect_COI_data_full.csv",sep=""),quote=FALSE,row.names=FALSE)
 #dput(fullsumdat,file=paste(path,"/insect_COI_data_sumtest.txt",sep=""))
 
 ## split into smaller dataframes of 500 rows each
