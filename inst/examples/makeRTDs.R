@@ -1,26 +1,42 @@
 #Script to calculate Return Time Distribution from iBOL COI Data
 library(rPython)
-library(data.table)
-library("Biostrings")
-#dat<-read.csv("D:/Users/Dinnage/Projects/WBHC-Project/data/COI_Play_Dataset.csv",stringsAsFactors=F)
-#dat<-dat[,c("processid","nucleotides","order_name","family_name","subfamily_name","genus_name","species_name")]
-#write.csv(dat,file="D:/Users/Dinnage/Projects/WBHC-Project/data/COI_Play_Dataset_clean.csv")
-#dat<-read.csv("/home/din02g/Google Drive/WBHC-Project/data/COI_Play_Dataset.csv",stringsAsFactors=F)
-#dat<-dat[,c("processid","nucleotides","order_name","family_name","subfamily_name","genus_name","species_name")]
-#write.csv(dat,file="/home/din02g/Google Drive/WBHC-Project/data/COI_Play_Dataset_clean.csv")
+source("/home/din02g/Google Drive/WBHC-Project/R/RTD.R")
+library(Biostrings)
 
-#dat<-fread("D:/Users/Dinnage/Projects/WBHC-Project/data/COI_Play_Dataset_clean.csv",stringsAsFactors=F)
-dat<-fread("/home/din02g/Google Drive/WBHC-Project/data/COI_Play_Dataset_clean.csv",stringsAsFactors=F)
-## get rid of empty sequences
-dat<-dat[dat$nucleotides!="",]
-## convert nucleotides to Biostrings sequence object
-seqs<-DNAStringSet(dat$nucleotides)
+## path to the clean data files
+path <- "/home/din02g/Google Drive/WBHC-Project/data/FullData"
+numfiles <- 159
+maxK <- 7
 
-test<-seqs
-names(test)<-seq_along(test)
-writeXStringSet(test,"/home/din02g/Google Drive/WBHC-Project/data/testing.fa")
+## loop through all data files
+for (i in 1:numfiles) {
+  fullpath <- paste(path, "/insect_COI_data_clean_", sprintf("%03d",i),".csv", sep="")
+  ## read in dataset
+  dat <- read.csv(fullpath, stringsAsFactors=FALSE, quote="")
+  ## pull out sequences and convert them to DNAStringSet (from Biostrings package)
+  seqs <- DNAStringSet(dat$nucleotides)
+  ## give the sequences their ID number so that I can keep track of them later
+  names(seqs) <- dat$IDnum
+  ## write sequence to a fasta file for use with Python code
+  fasta.name <- paste(path, "/fasta/insect_COI_data_clean_seqs_", sprintf("%03d",i),".fa", sep="")
+  writeXStringSet(seqs, fasta.name)
+  ## get RTD data using function that interfaces with Python code
+  RTDs <- getAll_RTDs(fasta.name, k=maxK)
+  ## attach results to original data and write to a csv for later analysis
+  newdat <- cbind(dat, RTDs)
+  dat.name <- paste(path, "/RTDs/insect_COI_data_clean_RTD_", sprintf("%03d",i),".csv", sep="")
+  write.csv(newdat, file=dat.name, row.names=FALSE, quote=FALSE)
+  gc()
+  print(paste("Done: File number", i, "out of", numfiles))
+}
 
-tester<-getRTDs("/home/din02g/Google Drive/WBHC-Project/data/testing.fa",k=1)
+## testing
+seqs<-seqs[501:1000]
+fasta.name <- paste(path, "/fasta/insect_COI_data_clean_seqs_", sprintf("%03d",i),".fa", sep="")
+writeXStringSet(seqs, fasta.name)
 system.time(
-testall<-getAll_RTDs("/home/din02g/Google Drive/WBHC-Project/data/testing.fa",k=7)
+  RTDs <- getAll_RTDs(fasta.name, k=maxK)
 )
+
+## on this system there is enough memory to do 500 sequences at a time
+## so I split the data into 500 row chuncks before hand, hence the above loop

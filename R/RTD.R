@@ -1,5 +1,4 @@
 require(rPython)
-require(Biostrings)
 require(plyr)
 require(dplyr)
 require(magrittr)
@@ -11,9 +10,9 @@ python.exec("sys.path.append(\"/home/din02g/Al-Fr_Diversity/Code/\")")
 
 getRTDs<-function(path,k=5){
   rtds<-python.call("computeRTDfromfastafile",path,k) 
-  out<- rtds[[2]] %>% ldply(identity)
+  out<- rtds[[2]] %>% laply(identity)
   rtdnames<-python.call("returnNames",k)
-  newnames<-unlist(lapply(rtdnames,function(x) paste(x,c("mean","var"),sep="_")))
+  newnames<-laply(rtdnames,function(x) paste(x,c("mean","var"),sep="_"))
   rownames(out)<-rtds[[1]]
   colnames(out)<-newnames
   return(out)
@@ -21,8 +20,7 @@ getRTDs<-function(path,k=5){
 
 
 getAll_RTDs<-function(path, k=5) {
-  all.rtds<-llply(seq_len(k),function(x) getRTDs(path,x)) %>% 
-  out<-do.call(cbind,all.rtds)
+  out<-llply(seq_len(k),function(x) getRTDs(path,x)) %>% do.call(cbind,.)
   return(out)
 }
 
