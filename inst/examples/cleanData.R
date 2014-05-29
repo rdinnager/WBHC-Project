@@ -43,8 +43,8 @@ fullsumdat<-left_join(sumdat,IDnums)
 ## save data
 path<-"D:/Users/Dinnage/Projects/WBHC-Project/data/FullData"
 save(fullsumdat,file=paste(path,"/insect_COI_data_summary.Rdata",sep=""))
-write.csv(sumdat,file=paste(path,"/insect_COI_data_counts.csv",sep=""),quote=FALSE,row.names=FALSE)
-write.csv(cleandat,file=paste(path,"/insect_COI_data_full.csv",sep=""),quote=FALSE,row.names=FALSE)
+write.csv(sumdat,file=paste(path,"/insect_COI_data_counts.csv",sep=""), row.names=FALSE)
+write.csv(cleandat,file=paste(path,"/insect_COI_data_full.csv",sep=""), row.names=FALSE)
 #dput(fullsumdat,file=paste(path,"/insect_COI_data_sumtest.txt",sep=""))
 
 ## split into smaller dataframes of 500 rows each
@@ -52,7 +52,7 @@ cleandat.list<-split(cleandat,gl(n=ceiling(nrow(cleandat)/500),k=500,length=nrow
 
 for (i in 1:length(cleandat.list)){
   fullpath<-paste(path,"/insect_COI_data_clean_",sprintf("%03d", i),".csv",sep="")
-  write.csv(cleandat.list[[i]],fullpath,quote=FALSE,row.names=FALSE)
+  write.csv(cleandat.list[[i]],fullpath, row.names=FALSE)
   print(i)
 }
 
