@@ -40,13 +40,26 @@ cleandat.new<-group_by(cleandat.spec,species_name) %>% do(sample_n(.,1))
 cleandat<-cleandat[is.na(cleandat$species_name),]
 cleandat<-rbind(cleandat,cleandat.new)
 
+## randomize row order
+cleandat<-cleandat[sample.int(nrow(cleandat)),]
+
 ## make my own ID
 cleandat$IDnum<-seq_along(cleandat$processid)
+
+#collect some data for later use
+sumdat<-group_by(cleandat,order_name,family_name,genus_name) %>% summarise(count=n())
+IDnums<-group_by(cleandat,order_name,family_name,genus_name) %>% do(IDnums=.$IDnum)
+fullsumdat<-left_join(sumdat,IDnums)
+
+## save data
+path<-"D:/Users/Dinnage/Projects/WBHC-Project/data/FullData"
+save(fullsumdat,file=paste(path,"/insect_COI_data_summary.Rdata",sep=""))
+write.csv(sumdat,file=paste(path,"/insect_COI_data_counts.csv",sep=""),quote=FALSE,row.names=FALSE)
+#dput(fullsumdat,file=paste(path,"/insect_COI_data_sumtest.txt",sep=""))
 
 ## split into smaller dataframes
 cleandat.list<-split(cleandat,gl(n=ceiling(nrow(cleandat)/1000),k=1000,length=nrow(cleandat)))
 
-path<-"D:/Users/Dinnage/Projects/WBHC-Project/data/FullData"
 for (i in 1:length(cleandat.list)){
   fullpath<-paste(path,"/insect_COI_data_clean_",sprintf("%03d", i),".csv",sep="")
   write.csv(cleandat.list[[i]],fullpath,quote=FALSE,row.names=FALSE)
