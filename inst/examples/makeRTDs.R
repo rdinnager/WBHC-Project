@@ -5,14 +5,14 @@ library(Biostrings)
 
 ## path to the clean data files
 path <- "/home/din02g/Google Drive/WBHC-Project/data/FullData"
-numfiles <- 159
+numfiles <- 317
 maxK <- 7
 
 ## loop through all data files
 for (i in 1:numfiles) {
   fullpath <- paste(path, "/insect_COI_data_clean_", sprintf("%03d",i),".csv", sep="")
   ## read in dataset
-  dat <- read.csv(fullpath, stringsAsFactors=FALSE, quote="")
+  dat <- read.csv(fullpath, stringsAsFactors=FALSE)
   ## pull out sequences and convert them to DNAStringSet (from Biostrings package)
   seqs <- DNAStringSet(dat$nucleotides)
   ## give the sequences their ID number so that I can keep track of them later
@@ -25,7 +25,7 @@ for (i in 1:numfiles) {
   ## attach results to original data and write to a csv for later analysis
   newdat <- cbind(dat, RTDs)
   dat.name <- paste(path, "/RTDs/insect_COI_data_clean_RTD_", sprintf("%03d",i),".csv", sep="")
-  write.csv(newdat, file=dat.name, row.names=FALSE, quote=FALSE)
+  write.csv(newdat, file=dat.name, row.names=FALSE)
   gc()
   print(paste("Done: File number", i, "out of", numfiles))
 }
