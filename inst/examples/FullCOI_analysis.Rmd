@@ -1,0 +1,47 @@
+---
+title: "Analyze full COI sequences"
+author: "Russell Dinnage"
+date: "04/06/2014"
+output: html_document
+---
+
+This documents the process of analyzing full COI sequences for hexapods. First we want to load in the sequences and then identify the species. This data was provided by Matthew Morgan--it is the output from a script he wrote that searched for all mitochonrion full genome sequences of Hexapoda (using the terms 'Hexapoda AND mitochondrion AND complete genome'), and then filters out the region of the genome with the feature tag 'CO1 OR cox1 OR COI'. Read the data:
+
+```{r}
+library(Biostrings)
+## load the sequences
+dat_coi <- readDNAStringSet("/home/din02g/Google Drive/WBHC-Project/data/FullCOI/Hexapoda_COI.fasta")
+```
+
+I then use the `taxize` package to identify the species and get their full taxonomic information (e.g. order, family, etc).
+
+```{r}
+library(taxize)
+library(plyr)
+## extract species names from sequence names
+nams <- strsplit(names(dat_coi)[1:995]," ",fixed=TRUE)
+insect_names <- lapply(nams, function (x) paste(x[c(2,3)], collapse="_"))
+insect_names <- c(insect_names, "Rhopalosiphum_padi")
+genus_names <- lapply(nams, function (x) x[2])
+genus_names <- c(genus_names, "Rhopalosiphum")
+## cleanup
+genus_names[which(genus_names == "UNVERIFIED:")] <- "Scolytus"
+
+## Look up names using taxize
+unique_genus_names <- unique(genus_names)
+## get classification
+tax_genus <- classification(unique_genus_names, db = "ncbi")
+## save classification
+save(tax_genus, file= "/home/din02g/Google Drive/WBHC-Project/data/FullCOI/Hexapoda_COI_class.rData")
+## make it into a data.frame
+tax_genus.ls <- llply(tax_genus, function(x) {
+    if (is.null(x)|is.na(x)) return (c(NA, NA, NA))
+    taxes <- x[x[,2] %in% c("order","family","genus"),1]
+    return(taxes)
+  })
+## find taxa which don't have all three classifications or were NA or NULL
+incomplete <- c(tax_genus.ls[sapply(tax_genus.ls,length) < 3], tax_genus.ls[sapply(tax_genus.ls,function(x) any(is.na(x)))])
+## try eol
+class2 <- classification(names(incomplete), db = "itis")
+save(class2, file="/home/din02g/Google Drive/WBHC-Project/data/FullCOI/Hexapoda_COI_class2.rData")
+```
