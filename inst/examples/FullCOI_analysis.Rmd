@@ -7,7 +7,7 @@ output: html_document
 
 This documents the process of analyzing full COI sequences for hexapods. First we want to load in the sequences and then identify the species. This data was provided by Matthew Morgan--it is the output from a script he wrote that searched for all mitochonrion full genome sequences of Hexapoda (using the terms 'Hexapoda AND mitochondrion AND complete genome'), and then filters out the region of the genome with the feature tag 'CO1 OR cox1 OR COI'. Read the data:
 
-```{r}
+```{r load, eval=FALSE}
 library(Biostrings)
 ## load the sequences
 dat_coi <- readDNAStringSet("/home/din02g/Google Drive/WBHC-Project/data/FullCOI/Hexapoda_COI.fasta")
@@ -15,7 +15,7 @@ dat_coi <- readDNAStringSet("/home/din02g/Google Drive/WBHC-Project/data/FullCOI
 
 I then use the `taxize` package to identify the species and get their full taxonomic information (e.g. order, family, etc).
 
-```{r}
+```{r classify, eval=FALSE}
 library(taxize)
 library(plyr)
 ## extract species names from sequence names
@@ -32,7 +32,8 @@ unique_genus_names <- unique(genus_names)
 ## get classification
 tax_genus <- classification(unique_genus_names, db = "ncbi")
 ## save classification
-save(tax_genus, file= "/home/din02g/Google Drive/WBHC-Project/data/FullCOI/Hexapoda_COI_class.rData")
+#save(tax_genus, file= "/home/din02g/Google Drive/WBHC-Project/data/FullCOI/Hexapoda_COI_class.rData")
+load(file= "/home/din02g/Google Drive/WBHC-Project/data/FullCOI/Hexapoda_COI_class.rData")
 ## make it into a data.frame
 tax_genus.ls <- llply(tax_genus, function(x) {
     if (is.null(x)|is.na(x)) return (c(NA, NA, NA))
@@ -40,8 +41,90 @@ tax_genus.ls <- llply(tax_genus, function(x) {
     return(taxes)
   })
 ## find taxa which don't have all three classifications or were NA or NULL
-incomplete <- c(tax_genus.ls[sapply(tax_genus.ls,length) < 3], tax_genus.ls[sapply(tax_genus.ls,function(x) any(is.na(x)))])
+incomplete.which <-c(which(sapply(tax_genus.ls,length) < 3), which(sapply(tax_genus.ls,function(x) any(is.na(x)))))
+incomplete <- tax_genus.ls[incomplete.which]
 ## try eol
 class2 <- classification(names(incomplete), db = "itis")
-save(class2, file="/home/din02g/Google Drive/WBHC-Project/data/FullCOI/Hexapoda_COI_class2.rData")
+#save(class2, file="/home/din02g/Google Drive/WBHC-Project/data/FullCOI/Hexapoda_COI_class2.rData")
+load(file="/home/din02g/Google Drive/WBHC-Project/data/FullCOI/Hexapoda_COI_class2.rData")
+tax_genus.ls[incomplete.which] <- llply(class2, function(x) {
+    if (is.null(x)|is.na(x)) return (c(NA, NA, NA))
+    taxes <- x[x[,2] %in% c("Order","Family","Genus"),1]
+    return(taxes)
+  })
+## clean-up the last few by hand
+tax_genus.ls$Atelura <- c("Thysanura","Nicoletiidae","Atelura")
+tax_genus.ls$Lepidopsocid <- c("Psocodoea", "Lepidopsocidae", "Lepidopsocid")
+tax_genus.ls$Octostigma <- c("Diplura","Octostigmatidae","Octostigma")
+## make a data.frame
+tax_genus.df <- as.data.frame(do.call(rbind, tax_genus.ls), stringsAsFactors=FALSE)
+colnames(tax_genus.df) <- c("Order", "Family", "Genus")
+
+```
+
+Now we just link up the classification information with the original sequence data
+
+```{r merge, eval=FALSE}
+genusdat <- data.frame(Species=as.character(insect_names),Genus=as.character(genus_names), stringsAsFactors=FALSE)
+fulldat <- merge(genusdat, tax_genus.df, all.x=TRUE)
+
+## last little clean-up
+fulldat[340,] <- c("Damaster", "Damaster_mirabilissimus", "Coleoptera", "Carabidae")
+fulldat[341,] <- c("Damaster", "Damaster_mirabilissimus", "Coleoptera", "Carabidae")
+
+## reorder columns
+fulldat <- fulldat[, c("Species", "Genus", "Family", "Order")]
+
+```
+
+Now, we will get rid of all duplicated species in order to reduce pseudo-replication later on
+
+```{r save, eval=FALSE}
+## find duplicates
+spec_dup <- duplicated(fulldat$Species)
+## make new reduced dataset
+newdat <- fulldat[!spec_dup,]
+## make reduced sequence set
+new_coi <- dat_coi[!spec_dup]
+## give new sequence set more informative names
+names(new_coi) <- paste(newdat$Order,newdat$Family,newdat$Species,sep="_")
+## save classification data and new sequence set
+write.csv(newdat,file="/home/din02g/Google Drive/WBHC-Project/data/FullCOI/Hexapoda_COI_reduced_classification.csv", row.names=FALSE)
+writeXStringSet(new_coi, file="/home/din02g/Google Drive/WBHC-Project/data/FullCOI/Hexapoda_COI_reduced.fasta")
+
+```
+
+Now that the classification data is all set-up, we will create a new sequence dataset where we take each full COI sequence and split it up into random 90 base-pair segments. I will initially try 1000 segments for each original sequence. Since there are 470 original sequences, this will give us 470,000 sequences. These will then be used to generate genetic features that will be used to train a machine learning model to identify the Order of 90 base-pair sequence fragments from metagenomic samples whose Order is unknown.
+
+```{r}
+## load the data
+seqdat <- readDNAStringSet("/home/din02g/Google Drive/WBHC-Project/data/FullCOI/Hexapoda_COI_reduced.fasta")
+classes <- read.csv(file="/home/din02g/Google Drive/WBHC-Project/data/FullCOI/Hexapoda_COI_reduced_classification.csv", stringsAsFactors=FALSE)
+library(dplyr)
+library(magrittr)
+seq.df <- as.character(seqdat) %>% data.frame(stringsAsFactors=FALSE) %>% set_names("Sequence") %>% set_rownames(seqdat %>% names) %>% cbind(classes, .)
+## This function generates num segments of length len from seq
+gen_segs <- function(seq, len = 90, num = 1000, Order, Family, Genus, Species) {
+  seqlen <- nchar(seq)
+  ## choose random start and stop positions for segments within the original sequence
+  pos_seq <- runif(num, 0, seqlen - len) %>% data.frame %>% set_names("lower") %>% mutate(upper=lower + len)
+  ## pull out new sequences using positions
+  newseqs <- pos_seq %>% rowwise %>% summarise(Sequence = substr(seq, start=lower, stop=upper)) %>%
+    mutate(Species=Species, Genus=Genus, Family=Family, Order=Order)
+}
+## generate new sequences from each of the original sequences
+full_segs <- seq.df %>% group_by(Order, Family, Genus, Species) %>% do(gen_segs(.$Sequence, Order=.$Order, Family=.$Family, Genus=.$Genus, Species=.$Species))
+
+## save data
+write.csv(full_segs, file="/home/din02g/Google Drive/WBHC-Project/data/FullCOI/Hexapoda_COI_segments.csv", row.names=FALSE)
+
+## split into smaller datasets for later processing:
+path <- "/home/din02g/Google Drive/WBHC-Project/data/FullCOI/Segments"
+segs.list<-split(full_segs,gl(n=ceiling(nrow(full_segs)/500),k=500,length=nrow(full_segs)))
+
+for (i in 1:length(segs.list)){
+  fullpath <- paste(path, "/Hexapoda_COI_segments_", sprintf("%03d", i), ".csv", sep="")
+  write.csv(segs.list[[i]], fullpath, row.names=FALSE)
+  print(i)
+}
 ```
