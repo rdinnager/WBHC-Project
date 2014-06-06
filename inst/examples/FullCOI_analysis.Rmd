@@ -115,6 +115,8 @@ gen_segs <- function(seq, len = 90, num = 1000, Order, Family, Genus, Species) {
 ## generate new sequences from each of the original sequences
 full_segs <- seq.df %>% group_by(Order, Family, Genus, Species) %>% do(gen_segs(.$Sequence, Order=.$Order, Family=.$Family, Genus=.$Genus, Species=.$Species))
 
+## make an ID column
+full_segs$IDnum <- seq_len(nrow(full_segs))
 ## save data
 write.csv(full_segs, file="/home/din02g/Google Drive/WBHC-Project/data/FullCOI/Hexapoda_COI_segments.csv", row.names=FALSE)
 
