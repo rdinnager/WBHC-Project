@@ -8,7 +8,8 @@ library(magrittr)
 getFiles <- function(i) {
   fullpath <- paste(path, "/Hexapoda_COI_segments_RTD_", sprintf("%03d",i),".csv", sep="")
   RTDs <- fread(fullpath) 
-  return(as.data.frame(RTDs))
+  return(RTDs)
 }
 
-RTDs <- seq_len(numfiles) %>% data.frame %>% set_names("filenum") %>% rowwise %>% do(getFiles(.$filenum))
+RTDs <- seq_len(3) %>% data.frame %>% set_names("filenum") %>% rowwise %>% 
+  do(rtds=getFiles(.$filenum)) %>% select(rtds) %>% rbindlist
