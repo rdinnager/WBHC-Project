@@ -25,15 +25,17 @@ cleandat<-cleandat[nchar(cleandat$nucleotides)>50,]
 library(dplyr)
 ## data with species names
 cleandat.spec<-cleandat[!is.na(cleandat$species_name),]
-cleandat.new<-group_by(cleandat.spec,species_name) %>% do(sample_n(.,1))
+#cleandat.new<-group_by(cleandat.spec,species_name) %>% do(sample_n(.,1))
+## take the sequence with the most number of bases for each duplicated species
+cleandat.new<-group_by(cleandat.spec,species_name) %>% do(.[which.max(nchar(.$nucleotides)),])
 cleandat<-cleandat[is.na(cleandat$species_name),]
 cleandat<-rbind(cleandat,cleandat.new)
 
-## randomize row order
-cleandat<-cleandat[sample.int(nrow(cleandat)),]
-
 ## make my own ID
 cleandat$IDnum<-seq_along(cleandat$processid)
+
+## randomize row order
+cleandat<-cleandat[sample.int(nrow(cleandat)),]
 
 #collect some data for later use
 sumdat<-group_by(cleandat,order_name,family_name,genus_name) %>% summarise(count=n())
@@ -42,9 +44,11 @@ fullsumdat<-left_join(sumdat,IDnums)
 
 ## save data
 path<-"D:/Users/Dinnage/Projects/WBHC-Project/data/FullData"
-save(fullsumdat,file=paste(path,"/insect_COI_data_summary.Rdata",sep=""))
-write.csv(sumdat,file=paste(path,"/insect_COI_data_counts.csv",sep=""), row.names=FALSE)
-write.csv(cleandat,file=paste(path,"/insect_COI_data_full.csv",sep=""), row.names=FALSE)
+#save(fullsumdat,file=paste(path,"/insect_COI_data_summary.Rdata",sep=""))
+saveRDS(fullsumdat,file=paste(path,"/insect_COI_data_summary_July14_2014.rds",sep=""))
+saveRDS(cleandat,file=paste(path,"/insect_COI_data_full_July14_2014.rds",sep=""))
+#write.csv(sumdat,file=paste(path,"/insect_COI_data_counts.csv",sep=""), row.names=FALSE)
+write.csv(cleandat,file=paste(path,"/insect_COI_data_full_July14_2014.csv",sep=""), row.names=FALSE)
 #dput(fullsumdat,file=paste(path,"/insect_COI_data_sumtest.txt",sep=""))
 
 ## split into smaller dataframes of 500 rows each
