@@ -21,6 +21,9 @@ cleandat[cleandat==" "]<-NA
 cleandat<-cleandat[!is.na(cleandat$nucleotides),]
 cleandat<-cleandat[nchar(cleandat$nucleotides)>50,]
 
+## Strip out gap characters
+cleandat$nucleotides <- gsub("-", "", cleandat$nucleotides, fixed = TRUE)
+
 ## reduce to only one sequence per species
 library(dplyr)
 ## data with species names
@@ -50,6 +53,14 @@ saveRDS(cleandat,file=paste(path,"/insect_COI_data_full_July14_2014.rds",sep="")
 #write.csv(sumdat,file=paste(path,"/insect_COI_data_counts.csv",sep=""), row.names=FALSE)
 write.csv(cleandat,file=paste(path,"/insect_COI_data_full_July14_2014.csv",sep=""), row.names=FALSE)
 #dput(fullsumdat,file=paste(path,"/insect_COI_data_sumtest.txt",sep=""))
+
+## write sequences to fasta file
+library(Biostrings)
+seqs <- DNAStringSet(cleandat$nucleotides)
+names(seqs) <- cleandat$IDnum
+testset <- seqs[1:10]
+writeXStringSet(seqs, paste(path,"/insect_COI_data_sequences_July14_2014.fasta",sep=""))
+writeXStringSet(testset, paste(path,"/insect_COI_data_forTesting_July14_2014.fasta",sep=""))
 
 ## split into smaller dataframes of 500 rows each
 cleandat.list<-split(cleandat,gl(n=ceiling(nrow(cleandat)/500),k=500,length=nrow(cleandat)))
