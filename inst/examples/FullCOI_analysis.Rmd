@@ -5,7 +5,7 @@ date: "04/06/2014"
 output: html_document
 ---
 
-This documents the process of analyzing full COI sequences for hexapods. First we want to load in the sequences and then identify the species. This data was provided by Matthew Morgan--it is the output from a script he wrote that searched for all mitochonrion full genome sequences of Hexapoda (using the terms 'Hexapoda AND mitochondrion AND complete genome'), and then filters out the region of the genome with the feature tag 'CO1 OR cox1 OR COI'. Read the data:
+This documents the process of analyzing full COI sequences for hexapods. First we want to load in the sequences and then identify the species. This data was provided by Matthew Morgan--it is the output from a script he wrote that searched for all mitochondrion full genome sequences of Hexapoda (using the terms 'Hexapoda AND mitochondrion AND complete genome'), and then filters out the region of the genome with the feature tag 'CO1 OR cox1 OR COI'. Read the data:
 
 ```{r load, eval=FALSE}
 library(Biostrings)
@@ -81,16 +81,28 @@ Now, we will get rid of all duplicated species in order to reduce pseudo-replica
 
 ```{r save, eval=FALSE}
 ## find duplicates
-spec_dup <- duplicated(fulldat$Species)
 ## make new reduced dataset
-newdat <- fulldat[!spec_dup,]
+newdat <- fulldat[order(fulldat$Genus),]
+spec_dup <- duplicated(newdat$Species)
+newdat <- newdat[which(!spec_dup),]
 ## make reduced sequence set
-new_coi <- dat_coi[!spec_dup]
+new_coi <- dat_coi
+names(new_coi) <- unlist(genus_names)
+new_coi <- new_coi[order(names(new_coi))]
+new_coi2 <- new_coi[which(!spec_dup)]
 ## give new sequence set more informative names
-names(new_coi) <- paste(newdat$Order,newdat$Family,newdat$Species,sep="_")
+names(new_coi2) <- paste(newdat$Order,newdat$Family,newdat$Species,sep="_")
+## find and remove non-ACGT characters
+bad <- lapply(strsplit(as.character(coi_char), split = ""), function(x) !x %in% c("A","C","G","T"))
+whichbad <- sapply(bad, any)
+coi_char <- as.character(new_coi2)
+coi_char <- gsub("N", "", coi_char, fixed = TRUE)
+coi_char <- gsub("Y", "", coi_char, fixed = TRUE)
+coi_char <- gsub("R", "", coi_char, fixed = TRUE)
+new_coi3 <- DNAStringSet(coi_char)
 ## save classification data and new sequence set
 write.csv(newdat,file="/home/din02g/Google Drive/WBHC-Project/data/FullCOI/Hexapoda_COI_reduced_classification.csv", row.names=FALSE)
-writeXStringSet(new_coi, file="/home/din02g/Google Drive/WBHC-Project/data/FullCOI/Hexapoda_COI_reduced.fasta")
+writeXStringSet(new_coi3, file="/home/din02g/Google Drive/WBHC-Project/data/FullCOI/Hexapoda_COI_reduced.fasta")
 
 ```
 
