@@ -53,6 +53,7 @@ saveRDS(cleandat,file=paste(path,"/insect_COI_data_full_July14_2014.rds",sep="")
 #write.csv(sumdat,file=paste(path,"/insect_COI_data_counts.csv",sep=""), row.names=FALSE)
 write.csv(cleandat,file=paste(path,"/insect_COI_data_full_July14_2014.csv",sep=""), row.names=FALSE)
 #dput(fullsumdat,file=paste(path,"/insect_COI_data_sumtest.txt",sep=""))
+#cleandat <- read.csv(file="/home/din02g/Google Drive/WBHC-Project/data/FullData/insect_COI_data_full_July14_2014.csv")
 
 ## write sequences to fasta file
 library(Biostrings)
@@ -61,6 +62,8 @@ names(seqs) <- cleandat$IDnum
 testset <- seqs[1:10]
 writeXStringSet(seqs, paste(path,"/insect_COI_data_sequences_July14_2014.fasta",sep=""))
 writeXStringSet(testset, paste(path,"/insect_COI_data_forTesting_July14_2014.fasta",sep=""))
+#writeXStringSet(testset, "/home/din02g/Google Drive/WBHC-Project/data/FullData/insect_COI_data_forTesting_July14_2014.fasta")
+
 
 ## split into smaller dataframes of 500 rows each
 cleandat.list<-split(cleandat,gl(n=ceiling(nrow(cleandat)/500),k=500,length=nrow(cleandat)))
