@@ -4,7 +4,7 @@ import itertools
 import sys
 
 fastafile = sys.argv[1]
-k = sys.argv[2]
+k = int(sys.argv[2])
 
 def makeAllMers(k):
     allstr=[]
