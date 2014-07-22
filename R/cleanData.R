@@ -54,6 +54,8 @@ saveRDS(cleandat,file=paste(path,"/insect_COI_data_full_July14_2014.rds",sep="")
 write.csv(cleandat,file=paste(path,"/insect_COI_data_full_July14_2014.csv",sep=""), row.names=FALSE)
 #dput(fullsumdat,file=paste(path,"/insect_COI_data_sumtest.txt",sep=""))
 #cleandat <- read.csv(file="/home/din02g/Google Drive/WBHC-Project/data/FullData/insect_COI_data_full_July14_2014.csv")
+#cleandat <- readRDS(file=paste(path,"/insect_COI_data_full_July14_2014.rds",sep=""))
+
 
 ## write sequences to fasta file
 library(Biostrings)
@@ -74,5 +76,33 @@ for (i in 1:length(cleandat.list)){
   print(i)
 }
 
-## make training and test set
+## load in RTDs for processing
+library(data.table)
+bigdat <- fread("D:/Users/Dinnage/Projects/WBHC-Project/data/FullData/insect_COI_data_full_RTDs_July17_2014.csv")
+## make rda file for easier loading
+iBOL_RTDs <- bigdat
+save(iBOL_RTDs, file = "D:/Users/Dinnage/Projects/WBHC-Project/data/FullData/insect_COI_data_full_RTDs_July21_2014.rda")
 
+## join with sequence data
+colnames(bigdat)[1] <- "IDnum"
+iBOL_RTDs <- left_join(cleandat, bigdat)
+save(iBOL_RTDs, file = "D:/Users/Dinnage/Projects/WBHC-Project/data/FullData/insect_COI_data_full_RTDs_July21_2014.rda")
+write.csv(iBOL_RTDs, file = "D:/Users/Dinnage/Projects/WBHC-Project/data/FullData/insect_COI_data_full_RTDs_July21_2014.csv")
+
+## make training and test set
+load("D:/Users/Dinnage/Projects/WBHC-Project/data/FullData/insect_COI_data_full_RTDs_July21_2014.rda")
+make_split <- function(N){
+  topN <- ceiling(N*0.66666)
+  botN <- N - topN
+  sample(c(rep(1, topN), rep(2, botN)))
+}
+sampler <- iBOL_RTDs %>% group_by(order_name, family_name) %>% do(data.frame(sampler = make_split(nrow(.))))
+iBOL_RTDs <- iBOL_RTDs %>% mutate(sampler = as.vector(sampler$sampler))
+
+test_RTDs <- iBOL_RTDs %>% filter(sampler == 2)
+save(test_RTDs, file = "D:/Users/Dinnage/Projects/WBHC-Project/data/FullData/insect_COI_data_test_RTDs_July22_2014.rda")
+rm(test_RTDs)
+gc()
+
+train_RTDs <- iBOL_RTDs %>% filter(sampler == 1)
+save(train_RTDs, file = "D:/Users/Dinnage/Projects/WBHC-Project/data/FullData/insect_COI_data_train_RTDs_July22_2014.rda")
